@@ -808,11 +808,13 @@ void msgsend(void* data, int size, int offset, int recipient)
 
 void msgread(void* data_out, int size, int offset)
 {
-  struct proc *p = myproc();
-
-  uint64 buf_pa = walkaddr(p->pagetable, (uint64)p->bufferpage);     // convert buffer virtual address to physical
-
+   struct proc *p = myproc();
+  
+  uint64 buf_pa = walkaddr(p->pagetable, (uint64)p->bufferpage);      // convert buffer virtual address to physical
+  
   uint64 out_pa = walkaddr(p->pagetable, (uint64)data_out);          // convert data_out virtual address to physical
-
-  memmove((char*)out_pa, (char*)buf_pa + offset, size);              // copy from buffer at offset into data_out
+  
+  printf("msgread: buf_pa=%p out_pa=%p\n", buf_pa, out_pa);
+  
+  memmove((char*)out_pa, (char*)buf_pa + offset, size);              // copy from buffer at offset into data_out         
 }
