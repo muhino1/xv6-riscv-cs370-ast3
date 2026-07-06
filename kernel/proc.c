@@ -763,15 +763,56 @@ void printpgtable(pagetable_t pagetable) {
 
 void msgenroll(void)
 {
-  //TODO: Please implement here
+  struct proc *p = myproc();
+
+  // Step 1: allocate a physical frame
+  void* pa = kalloc();
+  if(pa == 0)
+    panic("msgenroll: kalloc failed");
+  memset(pa, 0, PGSIZE);
+
+  // Step 2: map it into the process page table at the next virtual page
+  uint64 va = p->sz;
+  if(mappages(p->pagetable, va, PGSIZE, (uint64)pa, PTE_R|PTE_W|PTE_U) < 0)
+    panic("msgenroll: mappages failed");
+
+  // Step 3: store reference and update process size
+  p->bufferpage = (void*)va;
+  p->sz += PGSIZE;
 }
 
 void msgsend(void* data, int size, int offset, int recipient)
 {
-  //TODO: Please implement here
+  struct proc *cp = myproc();
+  
+  // find recipient process by pid
+  struct proc *rp = 0;
+  for(struct proc *p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == recipient){
+      rp = p;
+      release(&p->lock);
+      break;
+    }
+    release(&p->lock);
+  }
+  if(rp == 0)
+    panic("msgsend: recipient not found");
+
+  uint64 src_pa = walkaddr(cp->pagetable, (uint64)data);             // convert sender's data virtual address to physical
+
+  uint64 dst_pa = walkaddr(rp->pagetable, (uint64)rp->bufferpage);   // convert recipient's buffer virtual address to physical
+
+  memmove((char*)dst_pa + offset, (char*)src_pa, size);              // copy data into recipient's buffer at offset
 }
 
 void msgread(void* data_out, int size, int offset)
 {
-  //TODO: Please implement here
+  struct proc *p = myproc();
+
+  uint64 buf_pa = walkaddr(p->pagetable, (uint64)p->bufferpage);     // convert buffer virtual address to physical
+
+  uint64 out_pa = walkaddr(p->pagetable, (uint64)data_out);          // convert data_out virtual address to physical
+
+  memmove((char*)out_pa, (char*)buf_pa + offset, size);              // copy from buffer at offset into data_out
 }
