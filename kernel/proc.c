@@ -814,7 +814,7 @@ void msgread(void* data_out, int size, int offset)
   
   uint64 out_pa = walkaddr(p->pagetable, (uint64)data_out);          // convert data_out virtual address to physical
   
-  printf("msgread: buf_pa=%p out_pa=%p\n", buf_pa, out_pa);
+  printf("msgread: buf_pa=%p out_pa=%p\n", (void*)buf_pa, (void*)out_pa);;
   
   memmove((char*)out_pa, (char*)buf_pa + offset, size);              // copy from buffer at offset into data_out         
 }
