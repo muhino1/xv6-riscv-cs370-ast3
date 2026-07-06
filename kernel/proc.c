@@ -799,22 +799,26 @@ void msgsend(void* data, int size, int offset, int recipient)
   if(rp == 0)
     panic("msgsend: recipient not found");
 
-  uint64 src_pa = walkaddr(cp->pagetable, (uint64)data);             // convert sender's data virtual address to physical
+  // convert sender's data virtual address to physical (with page offset)
+  uint64 src_va = (uint64)data;
+  uint64 src_pa = walkaddr(cp->pagetable, src_va) + (src_va % PGSIZE);
 
-  uint64 dst_pa = walkaddr(rp->pagetable, (uint64)rp->bufferpage);   // convert recipient's buffer virtual address to physical
+  uint64 dst_pa = walkaddr(rp->pagetable, (uint64)rp->bufferpage);          // convert recipient's buffer virtual address to physical
 
-  memmove((char*)dst_pa + offset, (char*)src_pa, size);              // copy data into recipient's buffer at offset
+  memmove((char*)dst_pa + offset, (char*)src_pa, size);                     // copy data into recipient's buffer at offset
 }
 
 void msgread(void* data_out, int size, int offset)
 {
-   struct proc *p = myproc();
-  
-  uint64 buf_pa = walkaddr(p->pagetable, (uint64)p->bufferpage);      // convert buffer virtual address to physical
-  
-  uint64 out_pa = walkaddr(p->pagetable, (uint64)data_out);          // convert data_out virtual address to physical
-  
-  printf("msgread: buf_pa=%p out_pa=%p\n", (void*)buf_pa, (void*)out_pa);;
-  
-  memmove((char*)out_pa, (char*)buf_pa + offset, size);              // copy from buffer at offset into data_out         
+  struct proc *p = myproc();
+
+  // convert buffer virtual address to physical
+  uint64 buf_va = (uint64)p->bufferpage;
+  uint64 buf_pa = walkaddr(p->pagetable, buf_va);
+
+  // convert data_out virtual address to physical (with page offset)
+  uint64 out_va = (uint64)data_out;
+  uint64 out_pa = walkaddr(p->pagetable, out_va) + (out_va % PGSIZE);
+
+  memmove((char*)out_pa, (char*)buf_pa + offset, size);
 }
